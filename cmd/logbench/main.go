@@ -18,6 +18,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -58,8 +59,10 @@ func main() {
 	var logfiles, rateStrs MultpleValueFlag
 	var tLength, rampUp, freq time.Duration
 	var pid int
+	var outfile string
 	flag.Var(&logfiles, "log", "Path of the log files being generated and writes logs to, you can specify multiple values by using the parameter multiple times or use comma seperated list.")
-	flag.Var(&rateStrs, "rate", "Log generation rate to be tested, e.g. -log 1,100,1k,10k,100k, default 100")
+	flag.Var(&rateStrs, "rate", "Log generation rate to be tested, e.g. -rate 1,100,1k,10k,100k, default 100")
+	flag.StringVar(&outfile, "out", "", "Path of the output file to which results will be written.")
 	flag.IntVar(&pid, "p", noPid, "Pid of the agent to check resource usage")
 	flag.DurationVar(&tLength, "t", 10*time.Second, "Test duration, in format supported by time.ParseDuration, default 10s")
 	flag.DurationVar(&rampUp, "r", 1*time.Second, "Ramp up duration, time for agent to stablize, stats will not be collected during the ramp up, default 1s")
@@ -80,6 +83,18 @@ func main() {
 	}
 	if len(rates) == 0 {
 		rates = []float64{100}
+	}
+
+	var out *os.File
+	var results []map[string]interface{}
+	if len(outfile) != 0 {
+		f, err := os.Create(outfile)
+		if err != nil {
+			log.Printf("Unable to create output file specified by out param: %v", outfile)
+			os.Exit(1)
+		}
+		out = f
+		results = []map[string]interface{}{}
 	}
 
 	gens, err := generator.NewFixed(FixedLogLine, logfiles)
@@ -151,6 +166,14 @@ func main() {
 		t.Stop()
 		if pid != noPid && n > 0 {
 			fmt.Printf("In the past %v, average cpu usage: %.1f%%, average memory usage: %.1fM, maximium memory usage: %.1fM\n\n", tLength, scpu/float64(n), sres/float64(n)/1024/1024, mres/1024/1024)
+			if len(outfile) > 0 {
+				results = append(results, map[string]interface{}{
+					"rate":    int(rate),
+					"cpu_avg": scpu / float64(n),
+					"mem_avg": sres / float64(n) / 1024 / 1024,
+					"mem_max": mres / 1024 / 1024,
+				})
+			}
 		}
 	}
 
@@ -159,6 +182,15 @@ func main() {
 	if len(args) > 0 {
 		fmt.Println("Stopping the agent ...")
 		stopAgent(cmd)
+	}
+
+	if len(outfile) > 0 {
+		fmt.Printf("Writing results to %s", outfile)
+		jsonBytes, err := json.Marshal(map[string]interface{}{"results": results})
+		if err != nil {
+			log.Fatalf("Failed to write stats: %v", err)
+		}
+		out.Write(jsonBytes)
 	}
 }
 
@@ -196,7 +228,7 @@ func parseRates(strs []string) ([]float64, error) {
 
 		switch lb {
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			n = n
+			// n = n
 		case 'k':
 			n *= 1000
 		case 'm':
