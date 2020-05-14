@@ -29,8 +29,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/awslabs/amazon-log-agent-benchmark-tool/generator"
-	"github.com/awslabs/amazon-log-agent-benchmark-tool/resource"
+	"github.com/bluemedora/amazon-log-agent-benchmark-tool/generator"
+	"github.com/bluemedora/amazon-log-agent-benchmark-tool/resource"
 )
 
 const (

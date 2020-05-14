@@ -2,6 +2,4 @@ module github.com/bluemedora/amazon-log-agent-benchmark-tool
 
 go 1.12
 
-replace github.com/awslabs/amazon-log-agent-benchmark-tool => ./
-
-require github.com/awslabs/amazon-log-agent-benchmark-tool v0.0.0-00010101000000-000000000000
+require github.com/awslabs/amazon-log-agent-benchmark-tool v0.0.0-20200505071244-c5f96e667e52 // indirect
