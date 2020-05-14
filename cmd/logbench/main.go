@@ -188,9 +188,14 @@ func main() {
 		fmt.Printf("Writing results to %s", outfile)
 		jsonBytes, err := json.Marshal(map[string]interface{}{"results": results})
 		if err != nil {
-			log.Fatalf("Failed to write stats: %v", err)
+			fmt.Printf("Failed to marshal stats: %v", err)
+			os.Exit(1)
 		}
-		out.Write(jsonBytes)
+		if _, err = out.Write(jsonBytes); err != nil {
+			fmt.Printf("Failed to write file: %v", err)
+			os.Exit(1)
+		}
+
 	}
 }
 
