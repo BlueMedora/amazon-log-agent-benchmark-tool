@@ -90,7 +90,7 @@ func main() {
 	if len(outfile) != 0 {
 		f, err := os.Create(outfile)
 		if err != nil {
-			log.Printf("Unable to create output file specified by out param: %v", outfile)
+			fmt.Printf("Unable to create output file specified by out param: %v", outfile)
 			os.Exit(1)
 		}
 		out = f
