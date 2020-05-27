@@ -24,8 +24,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
-	"runtime/pprof"
 	"strconv"
 	"strings"
 	"syscall"
@@ -62,7 +60,6 @@ func main() {
 	var tLength, rampUp, freq time.Duration
 	var pid int
 	var outfile string
-	var cpuprofile, memprofile string
 	flag.Var(&logfiles, "log", "Path of the log files being generated and writes logs to, you can specify multiple values by using the parameter multiple times or use comma seperated list.")
 	flag.Var(&rateStrs, "rate", "Log generation rate to be tested, e.g. -rate 1,100,1k,10k,100k, default 100")
 	flag.StringVar(&outfile, "out", "", "Path of the output file to which results will be written.")
@@ -70,8 +67,6 @@ func main() {
 	flag.DurationVar(&tLength, "t", 10*time.Second, "Test duration, in format supported by time.ParseDuration, default 10s")
 	flag.DurationVar(&rampUp, "r", 1*time.Second, "Ramp up duration, time for agent to stablize, stats will not be collected during the ramp up, default 1s")
 	flag.DurationVar(&freq, "f", 1*time.Second, "Frequency to collect metrics represented in time duration, default 1s")
-	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to `file`")
-	flag.StringVar(&memprofile, "memprofile", "", "write memory profile to `file`")
 	flag.Parse()
 
 	if len(logfiles) == 0 {
@@ -88,18 +83,6 @@ func main() {
 	}
 	if len(rates) == 0 {
 		rates = []float64{100}
-	}
-
-	if cpuprofile != "" {
-		f, err := os.Create(cpuprofile)
-		if err != nil {
-			log.Fatal("could not create CPU profile: ", err)
-		}
-		defer f.Close()
-		if err := pprof.StartCPUProfile(f); err != nil {
-			log.Fatal("could not start CPU profile: ", err)
-		}
-		defer pprof.StopCPUProfile()
 	}
 
 	var out *os.File
@@ -213,18 +196,6 @@ func main() {
 			os.Exit(1)
 		}
 
-	}
-
-	if memprofile != "" {
-		f, err := os.Create(memprofile)
-		if err != nil {
-			log.Fatal("could not create memory profile: ", err)
-		}
-		defer f.Close()
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			log.Fatal("could not write memory profile: ", err)
-		}
 	}
 }
 
