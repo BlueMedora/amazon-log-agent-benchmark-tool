@@ -49,7 +49,8 @@ func NewFixed(line string, logfiles []string) (Generators, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create log file at %v with error: %v", path, err)
 		}
-		gen := NewFixedGenerator(line, out, 0)
+		buf := bufio.NewWriterSize(out, 1024*16)
+		gen := NewFixedGenerator(line, buf, 0)
 		gen.Start()
 		gens = append(gens, gen)
 	}
