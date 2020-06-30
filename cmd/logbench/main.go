@@ -58,13 +58,12 @@ var Usage = func() {
 func main() {
 	var logfiles, rateStrs MultpleValueFlag
 	var tLength, rampUp, freq time.Duration
-	var pid, batch int
+	var pid int
 	var outfile string
 	flag.Var(&logfiles, "log", "Path of the log files being generated and writes logs to, you can specify multiple values by using the parameter multiple times or use comma seperated list.")
 	flag.Var(&rateStrs, "rate", "Log generation rate to be tested, e.g. -rate 1,100,1k,10k,100k, default 100")
 	flag.StringVar(&outfile, "out", "", "Path of the output file to which results will be written.")
 	flag.IntVar(&pid, "p", noPid, "Pid of the agent to check resource usage")
-	flag.IntVar(&batch, "b", 1, "Number of logs lines to write as a batch, default 1")
 	flag.DurationVar(&tLength, "t", 10*time.Second, "Test duration, in format supported by time.ParseDuration, default 10s")
 	flag.DurationVar(&rampUp, "r", 1*time.Second, "Ramp up duration, time for agent to stablize, stats will not be collected during the ramp up, default 1s")
 	flag.DurationVar(&freq, "f", 1*time.Second, "Frequency to collect metrics represented in time duration, default 1s")
@@ -98,7 +97,7 @@ func main() {
 		results = []map[string]interface{}{}
 	}
 
-	gens, err := generator.NewFixed(FixedLogLine, logfiles, batch)
+	gens, err := generator.NewFixed(FixedLogLine, logfiles)
 	if err != nil {
 		log.Fatalf("Failed to create generators: %v", err)
 	}

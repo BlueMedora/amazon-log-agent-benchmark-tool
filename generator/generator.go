@@ -34,7 +34,6 @@ type Generator struct {
 	rate   float64
 	buf    []string
 	idx    int
-	batch  int
 	done   chan struct{}
 	rateCh chan float64
 
@@ -43,14 +42,14 @@ type Generator struct {
 
 type Generators []*Generator
 
-func NewFixed(line string, logfiles []string, batch int) (Generators, error) {
+func NewFixed(line string, logfiles []string) (Generators, error) {
 	var gens Generators
 	for _, path := range logfiles {
 		out, err := os.Create(path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create log file at %v with error: %v", path, err)
 		}
-		gen := NewFixedGenerator(line, out, 0, batch)
+		gen := NewFixedGenerator(line, out, 0)
 		gen.Start()
 		gens = append(gens, gen)
 	}
@@ -89,13 +88,12 @@ func NewGeneratorFromFile(path string, dest io.Writer, rate float64) (*Generator
 	return &Generator{buf: lines, dest: dest, rate: rate, done: make(chan struct{}), rateCh: make(chan float64)}, nil
 }
 
-func NewFixedGenerator(line string, dest io.Writer, rate float64, batch int) *Generator {
+func NewFixedGenerator(line string, dest io.Writer, rate float64) *Generator {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return &Generator{
 		buf:    []string{line},
 		dest:   dest,
 		rate:   rate,
-		batch:  batch,
 		done:   make(chan struct{}),
 		rateCh: make(chan float64),
 		rand:   r,
@@ -111,20 +109,12 @@ func (g *Generator) Start() {
 		tn := time.Now()
 		t := time.NewTimer(0)
 		<-t.C
-		lineCount := 0
-		lines := ""
 		for {
 			select {
 			case now := <-t.C:
 				for {
 					d := g.timeBetweenLine()
-					lines = fmt.Sprintf("%s%v %s\n", lines, now.Format(timeFormat), g.nextLine())
-					lineCount++
-					if lineCount == g.batch {
-						fmt.Fprintf(g.dest, "%s", lines)
-						lines = ""
-						lineCount = 0
-					}
+					fmt.Fprintf(g.dest, "%v %s\n", now.Format(timeFormat), g.nextLine())
 					tn = tn.Add(d)
 					if tn.After(now) {
 						t.Reset(tn.Sub(now))
